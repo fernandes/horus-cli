@@ -1,13 +1,14 @@
+require "thor"
+require "json_api_client"
+require "net/http"
 require "horus/cli/version"
 require "horus/cli/config"
 require "horus/cli/helpers"
-require "thor"
-require "json_api_client"
-require "horus/cli/manager/base"
-require 'net/http'
+require "horus/cli/horus_connection"
+require "horus/cli/manager"
 
 module Horus
-  module Cli 
+  module Cli
     class Command < Thor
       desc 'version', "Display  #{Config::COMPANY}-cli version"
       map %w[-v --version] => :version
@@ -21,31 +22,6 @@ module Horus
         options = "company: #{Config::COMPANY}\n"
         options += "API base url: #{Config::API_BASE_URL}\n"
         say options
-      end
-
-      desc 'list RESOURCE', "List RESOURCES to user"
-      def list(resource, token = nil)
-        if resource == 'clients'
-          resource_class = Horus::Cli::Manager::Client
-        elsif resource == 'telephones'
-          resource_class = Horus::Cli::Manager::ClientTelephone
-        elsif resource == 'addresses'
-          resource_class = Horus::Cli::Manager::ClientAddress
-        else
-          abort("RESOURCE not found!")
-        end
-        if !ENV['HORUS_TOKEN'] && token.nil?
-          token = read_credentials
-          if token
-            ENV['HORUS_TOKEN'] = token
-            results = resource_class.all
-            results.each do |r|
-              puts r.inspect
-            end
-          else
-            puts "You need a token! Please type: #{Config::COMPANY}-cli login."
-          end
-        end
       end
 
       desc 'login', "Login in Horus API"
@@ -67,22 +43,63 @@ module Horus
           puts "Login failed try again!"
           puts e
         end
+      end
 
+      desc 'list RESOURCE', "List RESOURCES to user"
+      def list(resource, relation=nil)
+        set_token
+        resource_class = get_resource_class(resource)
+        if relation.nil?
+          begin
+            results = resource_class.all
+          rescue => e
+            abort("Error: #{e} \nPlease use #{Config::COMPANY}-cli list RESOURCE 'relation_id: x'")
+          end
+        else
+          relation = eval("{#{relation}}")
+          begin
+            results = resource_class.where(relation)
+          rescue => e
+            abort("Error: #{e}")
+          end
+        end
+        if !results.nil? && results.length > 0
+          results.each do |r|
+            puts r.inspect
+            puts "======================="
+          end
+        else
+          puts "Results not found!"
+        end
+      end
+
+      desc "create RESOURCE ':name => 'Name', :email => 'email@example.com'", "Create a new resource"
+      def create(resource, data)
+        set_token
+        data = "{#{data}}"
+        data = eval(data)
+        resource_class = get_resource_class(resource)
+        obj = resource_class.new(data)
+        if !obj.save
+          abort("Error: \n#{obj.errors.full_messages}")
+        end
+        puts "Created!\n#{obj.attributes}"
+      end
+
+      desc 'update', "Update a resource"
+      def update(resource, id, data)
+        set_token
+        data = "{#{data}}"
+        data = eval(data)
+        resource_class = get_resource_class(resource)
+        obj = resource_class.find(id).first
+        if !obj.update_attributes(data)
+          abort("Error: \n#{obj.errors.full_messages}")
+        end
+        puts "Updated!\n#{obj.attributes}"
       end
 
       no_commands do
-        def echo_off
-          with_tty do
-            system "stty -echo"
-          end
-        end
-
-        def echo_on
-          with_tty do
-            system "stty echo"
-          end
-        end
-
         def ask_for_password
           begin
             echo_off
@@ -98,14 +115,36 @@ module Horus
           $stdin.gets.to_s.strip
         end
 
-        def with_tty(&block)
-          return unless $stdin.isatty
-          begin
-            yield
-          rescue
-            # fails on windows
+        def get_resource_class(resource)
+          case resource
+          when 'clients' then Horus::Cli::Manager::Client
+          when 'telephones' then Horus::Cli::Manager::ClientTelephone
+          when 'addresses' then Horus::Cli::Manager::ClientAddress
+          else abort("RESOURCE not found!")
           end
         end
+
+        def echo_off
+          with_tty do
+            system "stty -echo"
+          end
+        end
+
+        def echo_on
+          with_tty do
+            system "stty echo"
+          end
+        end
+
+        def read_credentials
+          begin
+            File.read("#{Config::HORUS_CONFIG_PATH}/credentials")
+          rescue => e
+            puts "Error: Credentials not found!"
+            false
+          end
+        end
+
         def save_credentials
           path = Config::HORUS_CONFIG_PATH
           file = "#{path}/credentials"
@@ -120,12 +159,23 @@ module Horus
           File.write(file, ENV['HORUS_TOKEN'])
         end
 
-        def read_credentials
+        def set_token
+          if !ENV['HORUS_TOKEN']
+            token = read_credentials
+            if token
+              ENV['HORUS_TOKEN'] = token
+            else
+              abort("You need a token! Please type: #{Config::COMPANY}-cli login.")
+            end
+          end
+        end
+
+        def with_tty(&block)
+          return unless $stdin.isatty
           begin
-            File.read("#{Config::HORUS_CONFIG_PATH}/credentials")
-          rescue => e
-            puts "Error: Credentials not found!"
-            false
+            yield
+          rescue
+            # fails on windows
           end
         end
       end
