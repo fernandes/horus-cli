@@ -17,7 +17,7 @@ module Horus
       class ClientAddress < Base
         belongs_to :client
         def self.table_name
-          "client-addresses"
+          "client-address"
         end
       end
       class Profile < Base

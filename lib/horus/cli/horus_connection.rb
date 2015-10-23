@@ -8,8 +8,7 @@ module JsonApiClient
       token = ENV['HORUS_TOKEN']
       headers.merge!({"Authorization": "Bearer #{token}" })
       return headers if tenant.nil?
-      headers.merge!({ "HTTP_HOST": "acme.lvh.me" }) if tenant == :acme
-      headers.merge!({ "HTTP_HOST": "smart.lvh.me" }) if tenant == :smart
+      headers.merge!({ "HTTP_HOST": "#{ENV['HORUS_TENANT']}.lvh.me" }) if ENV['HORUS_TENANT']
       headers
     end
   end
