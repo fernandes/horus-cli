@@ -20,6 +20,11 @@ module Horus
           "client-addresses"
         end
       end
+      class Profile < Base
+        def self.table_name
+          "profile"
+        end
+      end
     end
   end
 end

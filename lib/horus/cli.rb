@@ -99,6 +99,23 @@ module Horus
         puts "Updated!\n#{obj.attributes}"
       end
 
+      desc 'profile [show, update]', "Show user profile"
+      def profile(action, data = nil)
+        if(action!='show' && action!='update')
+          abort("Error: please send a corrent action")
+        end
+        set_token
+        resource_class = get_resource_class('profile')
+        profile = resource_class.first
+        if action == 'update' && data != nil
+          data = "{#{data}}"
+          data = eval(data)
+          result_resource = { :data => { :type => "#{profile.attributes[:type].pluralize}",:id => "#{profile.attributes[:id]}",:attributes => data} }
+          profile = resource_class.parser.parse(resource_class, resource_class.connection.run(:patch,"profile",result_resource,{}))
+        end
+        puts profile.inspect
+      end
+
       no_commands do
         def ask_for_password
           begin
@@ -120,6 +137,7 @@ module Horus
           when 'clients' then Horus::Cli::Manager::Client
           when 'telephones' then Horus::Cli::Manager::ClientTelephone
           when 'addresses' then Horus::Cli::Manager::ClientAddress
+          when 'profile' then Horus::Cli::Manager::Profile
           else abort("RESOURCE not found!")
           end
         end
