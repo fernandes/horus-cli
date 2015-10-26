@@ -9,15 +9,13 @@ module Horus
         has_one :address, class_name: 'ClientAddress'
       end
       class ClientTelephone < Base
-        belongs_to :client
         def self.table_name
           "client-telephones"
         end
       end
       class ClientAddress < Base
-        belongs_to :client
         def self.table_name
-          "client-address"
+          "client-addresses"
         end
       end
       class Profile < Base
