@@ -8,6 +8,6 @@ class Horus::Cli::ConfigTest < Minitest::Test
     assert ::Horus::Cli::Config::API_BASE_URL == "http://localhost:3000/"
   end
   def test_horus_config_path
-    assert ::Horus::Cli::Config::HORUS_CONFIG_PATH == ENV['HOME']+"/.horus"
+    assert ::Horus::Cli::Config::HORUS_CONFIG_PATH == "/tmp/.horus"
   end
 end

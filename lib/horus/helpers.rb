@@ -79,6 +79,7 @@ module Horus
           abort("You need a token! Please type: #{Horus::Cli::Config::COMPANY}-cli login.")
         end
       end
+      ENV['HORUS_TOKEN']
     end
 
     def with_tty(&block)

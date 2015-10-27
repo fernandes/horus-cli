@@ -13,6 +13,7 @@ module Horus
   module Cli
     class Command < Thor
       include Horus::Helpers
+
       desc 'version', "Display  #{Config::COMPANY}-cli version"
       map %w[-v --version] => :version
       def version
@@ -96,7 +97,6 @@ module Horus
       end
 
       desc "create RESOURCE ':name => 'Name', :email => 'email@example.com'", "Create a new resource"
-      #def create(resource, data)
       def create(resource, data, relation = nil, id = nil)
         set_token
         data = "{#{data}}"
@@ -114,12 +114,18 @@ module Horus
             abort("Error: RESOURCE not exist")
           end
         end
-        # resource_class = get_resource_class(resource)
-        # obj = resource_class.new(data)
         if !obj.save
           abort("Error: #{obj.errors.full_messages}")
         end
         puts "Created! #{obj.attributes}"
+      end
+
+      desc "show RESOURCE id", "Show resource details"
+      def show(resource, id)
+        set_token
+        resource_class = get_resource_class(resource)
+        obj = resource_class.find(id).first
+        say obj.attributes
       end
 
       desc 'update', "Update a resource"
