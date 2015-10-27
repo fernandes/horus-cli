@@ -96,28 +96,26 @@ module Horus
       end
 
       desc "create RESOURCE ':name => 'Name', :email => 'email@example.com'", "Create a new resource"
-      def create(resource, data)
-      #def create(resource, data, relation = nil, id = nil)
+      #def create(resource, data)
+      def create(resource, data, relation = nil, id = nil)
         set_token
         data = "{#{data}}"
         data = eval(data)
-        # if relation.nil?
-        #   resource_class = get_resource_class(resource)
-        #   obj = resource_class.new(data)
-        # else
-        #   relation_class = get_resource_class(relation)
-        #   obj = relation_class.find(id).first
-        #   resource_class = get_resource_class(resource)
-        #   if resource == 'telephones'
-        #     obj.relationships.telephones = [resource_class.new(data)]
-        #   elsif resource == 'addresses'
-        #     obj.relationships.address = [resource_class.new(data)]
-        #   else
-        #     abort("Error: RESOURCE not exist")
-        #   end
-        # end
-        resource_class = get_resource_class(resource)
-        obj = resource_class.new(data)
+        if relation.nil?
+          resource_class = get_resource_class(resource)
+          obj = resource_class.new(data)
+        else
+          relation_class = get_resource_class(relation)
+          resource_class = get_resource_class(resource)
+          obj = resource_class.new(data)
+          if relation == 'clients'
+            obj.relationships.client = relation_class.find(id).first
+          else
+            abort("Error: RESOURCE not exist")
+          end
+        end
+        # resource_class = get_resource_class(resource)
+        # obj = resource_class.new(data)
         if !obj.save
           abort("Error: #{obj.errors.full_messages}")
         end
