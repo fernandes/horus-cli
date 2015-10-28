@@ -43,27 +43,18 @@ module Horus
         print "Password (typing will be hidden): "
         password = ask_for_password
         if options[:domain]
-          uri = URI("http://#{options[:domain]}/oauth/token")
+          url = "http://#{options[:domain]}/oauth/token"
         else
-          uri = URI(Config::API_BASE_URL+"oauth/token")
+          url = Config::API_BASE_URL+"oauth/token"
         end
-
-        puts "Authing with #{username} in #{uri}:"
-        begin
-          http = Net::HTTP.new(uri.host,uri.port)
-          req = Net::HTTP::Post.new(uri.path)
-          req.set_form_data("grant_type" => "password", "username" => username, "password" => password)
-          res = http.request(req)
-          json = JSON.parse(res.body)
-          ENV['HORUS_TOKEN'] = json['access_token']
-          user_type = 'Manager' if options[:manager]
-          user_type = 'Admin' if options[:admin]
-          user_type = 'User' if options[:user]
-          ENV['HORUS_USER_TYPE'] = user_type
-          save_credentials
-          puts "You are logged!"
-        rescue => e
-          puts "Login failed try again!"
+        user_type = 'Manager' if options[:manager]
+        user_type = 'Admin' if options[:admin]
+        user_type = 'User' if options[:user]
+        puts "Authing with #{username} in #{url}:"
+        if login_as(user_type, username, password, url)
+          say "You are logged!"
+        else
+          say "Login failed try again!"
         end
       end
 
@@ -87,19 +78,23 @@ module Horus
           end
         end
         if !results.nil? && results.length > 0
+          result = ''
           results.each do |r|
-            puts r.inspect
-            puts "======================="
+            result += r.attributes.to_s
+            result += "\n"
           end
         else
-          puts "Results not found!"
+          result = "Results not found!"
         end
+        say result
+        result
       end
 
-      desc "create RESOURCE ':name => 'Name', :email => 'email@example.com'", "Create a new resource"
+      desc "create RESOURCE '\"name\": \"Name\", \"email\": \"email@example.com\"", "Create a new resource"
       def create(resource, data, relation = nil, id = nil)
         set_token
         data = "{#{data}}"
+        puts data
         data = eval(data)
         if relation.nil?
           resource_class = get_resource_class(resource)
@@ -117,7 +112,7 @@ module Horus
         if !obj.save
           abort("Error: #{obj.errors.full_messages}")
         end
-        puts "Created! #{obj.attributes}"
+        say obj.attributes
       end
 
       desc "show RESOURCE id", "Show resource details"
@@ -128,7 +123,7 @@ module Horus
         say obj.attributes
       end
 
-      desc 'update', "Update a resource"
+      desc 'update RESOURCE id \'"name":"Update Name", "email":"update_email@example.com"\'', "Update a resource"
       def update(resource, id, data)
         set_token
         data = "{#{data}}"
@@ -136,9 +131,10 @@ module Horus
         resource_class = get_resource_class(resource)
         obj = resource_class.find(id).first
         if !obj.update_attributes(data)
-          abort("Error: \n#{obj.errors.full_messages}")
+          say "Error: #{obj.errors.full_messages}"
+        else
+          say obj.attributes
         end
-        puts "Updated!\n#{obj.attributes}"
       end
 
       desc 'profile [show, update]', "Show user profile"
@@ -153,9 +149,9 @@ module Horus
           data = "{#{data}}"
           data = eval(data)
           result_resource = { :data => { :type => "#{profile.attributes[:type].pluralize}",:id => "#{profile.attributes[:id]}",:attributes => data} }
-          profile = resource_class.parser.parse(resource_class, resource_class.connection.run(:patch,"profile",result_resource,{}))
+          profile = resource_class.parser.parse(resource_class, resource_class.connection.run(:patch,"profile",result_resource,{})).first
         end
-        puts profile.inspect
+        say profile.attributes
       end
 
     end

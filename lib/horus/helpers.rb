@@ -44,6 +44,23 @@ module Horus
       end
     end
 
+    def login_as(user_type, username, password, url)
+      uri = URI(url)
+      begin
+        http = Net::HTTP.new(uri.host,uri.port)
+        req = Net::HTTP::Post.new(uri.path)
+        req.set_form_data("grant_type" => "password", "username" => username, "password" => password)
+        res = http.request(req)
+        json = JSON.parse(res.body)
+        ENV['HORUS_TOKEN'] = json['access_token']
+        ENV['HORUS_USER_TYPE'] = user_type
+        save_credentials
+        return true
+      rescue => e
+        return false
+      end
+    end
+
     def read_credentials
       begin
         content = File.read("#{Horus::Cli::Config::HORUS_CONFIG_PATH}/credentials")
