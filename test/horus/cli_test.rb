@@ -25,10 +25,18 @@ class Horus::CliTest < Minitest::Test
     assert out.index("\"type\"=>\"clients\"") != nil
   end
 
+  def test_command_list_users
+    do_login
+    out = get_command_output(['list','users'])
+    assert out.index("{\"id\"=>\"") != nil
+    assert out.index("\"type\"=>\"client-users\"") != nil
+  end
+
   def test_command_create
     do_login
+    clients = apidata_to_hash(get_command_output(['list','users']))
     keyname = get_new_key_name("keyname")
-    data = '"corporate-name": "Corporate Name", "trade-name": "Trade Name", "key-name": "'+"#{keyname}"+'", "email": "client@example.com"'
+    data = '"corporate-name": "Corporate Name", "trade-name": "Trade Name", "key-name": "'+"#{keyname}"+'", "email": "client@example.com", "owner-id": "'+clients[0]["id"].to_s+'"'
     out = get_command_output(['create','clients',data])
     assert out.include?("{\"corporate-name\"=>\"Corporate Name\"")
   end
@@ -46,7 +54,7 @@ class Horus::CliTest < Minitest::Test
     client = clients[rand(clients.length-1)]
     newmail = "newclient@#{client["key-name"]}.com"
     out = get_command_output(['update','clients',client["id"],'"email":"'+newmail+'"'])
-    assert out.include?('{"id"=>"'+client["id"]+'", "type"=>"clients", "corporate-name"=>"'+client["corporate-name"]+'", "trade-name"=>"'+client["trade-name"]+'", "key-name"=>"'+client["key-name"]+'", "email"=>"'+newmail+'"}')
+    assert out.include?('{"id"=>"'+client["id"]+'", "type"=>"clients", "corporate-name"=>"'+client["corporate-name"]+'", "trade-name"=>"'+client["trade-name"]+'", "key-name"=>"'+client["key-name"]+'", "email"=>"'+newmail+'"')
   end
 
   def test_command_profile

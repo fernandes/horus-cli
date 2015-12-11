@@ -8,6 +8,11 @@ module Horus
         has_many :telephones, class_name: 'ClientTelephone'
         has_one :address, class_name: 'ClientAddress'
       end
+      class ClientUser < Base
+        def self.table_name
+          "client-users"
+        end
+      end
       class ClientTelephone < Base
         def self.table_name
           "client-telephones"
