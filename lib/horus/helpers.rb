@@ -22,6 +22,7 @@ module Horus
       when 'clients' then "Horus::Cli::#{ENV['HORUS_USER_TYPE']}::Client".constantize if ENV['HORUS_USER_TYPE'] == 'Manager'
       when 'telephones' then "Horus::Cli::#{ENV['HORUS_USER_TYPE']}::ClientTelephone".constantize if ENV['HORUS_USER_TYPE'] == 'Manager'
       when 'addresses' then "Horus::Cli::#{ENV['HORUS_USER_TYPE']}::ClientAddress".constantize if ENV['HORUS_USER_TYPE'] == 'Manager'
+      when 'users' then "Horus::Cli::#{ENV['HORUS_USER_TYPE']}::ClientUser".constantize if ENV['HORUS_USER_TYPE'] == 'Manager'
       when 'profile' then "Horus::Cli::#{ENV['HORUS_USER_TYPE']}::Profile".constantize
       else nil
       end
